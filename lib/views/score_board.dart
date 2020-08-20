@@ -28,7 +28,8 @@ class ScoreBoard extends StatelessWidget {
                       color: Colors.black12,
                       width: constraints.maxWidth * blackPieces / totalScore,
                       height: double.infinity,
-                      child: _buildScore(context, 'Black', blackPieces),
+                      child: _buildScore(context, 'Black', blackPieces,
+                          showIndicator: false),
                     ),
                     AnimatedContainer(
                       duration: Duration(milliseconds: 500),
@@ -36,7 +37,8 @@ class ScoreBoard extends StatelessWidget {
                       color: Colors.white12,
                       width: constraints.maxWidth * whitePieces / totalScore,
                       height: double.infinity,
-                      child: _buildScore(context, 'White', whitePieces),
+                      child: _buildScore(context, 'White', whitePieces,
+                          showIndicator: model.currentTurn == Piece.white),
                     ),
                   ],
                 );
@@ -48,7 +50,8 @@ class ScoreBoard extends StatelessWidget {
     );
   }
 
-  Widget _buildScore(BuildContext context, String label, int count) {
+  Widget _buildScore(BuildContext context, String label, int count,
+      {bool showIndicator = false}) {
     final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -56,12 +59,28 @@ class ScoreBoard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            label,
-            overflow: TextOverflow.fade,
-            softWrap: false,
-            style: textTheme.subtitle1
-                .copyWith(fontWeight: FontWeight.w300, color: Colors.white70),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                overflow: TextOverflow.fade,
+                softWrap: false,
+                style: textTheme.subtitle1.copyWith(
+                    fontWeight: FontWeight.w300, color: Colors.white70),
+              ),
+              showIndicator
+                  ? Container(
+                      margin: EdgeInsets.only(left: 8),
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(Colors.white70),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : SizedBox()
+            ],
           ),
           SizedBox(height: 4),
           TickingNumber(count,

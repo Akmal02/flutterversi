@@ -4,7 +4,9 @@ import 'board.dart';
 import 'game_model.dart';
 import 'player.dart';
 
-class GameAI implements Participant {
+class GameAI extends Participant {
+  GameAI(Piece piece) : super(piece);
+
   @override
   Future<Point<int>> move(Board board) async {
     await Future.delayed(Duration(milliseconds: 950));
@@ -12,10 +14,9 @@ class GameAI implements Participant {
     final possibleMovePoint =
         validMoves.pointWhere((item) => item == true).toList();
 
+    if (possibleMovePoint.isEmpty) return null;
+
     final randomMove = (possibleMovePoint..shuffle()).first;
     return randomMove;
   }
-
-  @override
-  Piece get piece => Piece.white;
 }

@@ -8,13 +8,16 @@ class Array2D<T> {
 
   final bool immutable;
 
-  Array2D(this.row, this.col, {this.immutable = false}) : _data = List<T>(row * col);
+  Array2D(this.row, this.col, {this.immutable = false})
+      : _data = List<T>(row * col);
 
   T get(int x, int y) {
     return _data[x * col + y];
   }
 
   T call(int x, int y) => get(x, y);
+
+  Point<int> get size => Point(row, col);
 
   factory Array2D.from(Array2D other) {
     return Array2D(other.row, other.col)..fill((x, y) => other.get(x, y));
@@ -65,5 +68,17 @@ class Array2D<T> {
 
   bool isInBounds(int x, int y) {
     return (x >= 0 && x < row) && (y >= 0 && y < col);
+  }
+
+  @override
+  String toString() {
+    final sb = StringBuffer();
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        sb..write(get(i, j))..write(',');
+      }
+      sb.write('\n');
+    }
+    return sb.toString();
   }
 }

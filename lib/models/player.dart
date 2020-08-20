@@ -5,24 +5,22 @@ import 'board.dart';
 import 'game_model.dart';
 
 abstract class Participant {
-  Future<Point<int>> move(Board board);
+  final Piece piece;
 
-  Piece get piece;
+  Participant(this.piece);
+
+  Future<Point<int>> move(Board board);
 }
 
-class Player implements Participant {
+class Player extends Participant {
   Completer<Point<int>> completer;
+
+  Player(Piece piece) : super(piece);
 
   @override
   Future<Point<int>> move(Board board) {
-    return completer.future;
-  }
-
-  @override
-  Piece get piece => Piece.black;
-
-  void prepare() {
     completer = Completer<Point<int>>();
+    return completer.future;
   }
 
   void send(int x, int y) {

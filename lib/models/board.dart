@@ -7,16 +7,28 @@ import 'game_model.dart';
 class Board {
   final Array2D<Piece> grid;
 
-  Board.fresh() : grid = _setStartingPoint();
+  Board.fresh({int size = 8}) : grid = _setStartingPoint(size);
 
   Board.from(this.grid);
 
-  static Array2D<Piece> _setStartingPoint() {
-    return Array2D<Piece>(8, 8)
-      ..set(3, 3, Piece.white)
-      ..set(3, 4, Piece.black)
-      ..set(4, 3, Piece.black)
-      ..set(4, 4, Piece.white);
+  static const allDirections = [
+    Point(1, 0),
+    Point(-1, 0),
+    Point(0, 1),
+    Point(0, -1),
+    Point(1, 1),
+    Point(1, -1),
+    Point(-1, 1),
+    Point(-1, -1),
+  ];
+
+  static Array2D<Piece> _setStartingPoint(int size) {
+    int halfsize = size ~/ 2 - 1;
+    return Array2D<Piece>(size, size)
+      ..set(halfsize, halfsize, Piece.white)
+      ..set(halfsize + 1, halfsize, Piece.black)
+      ..set(halfsize, halfsize + 1, Piece.black)
+      ..set(halfsize + 1, halfsize + 1, Piece.white);
   }
 
   Board makeMove(Piece piece, int x, int y) {
@@ -43,22 +55,42 @@ class Board {
   int get scoreDifference => scoreFor(Piece.black) - scoreFor(Piece.white);
 
   Array2D<bool> possibleMovesFor(Piece piece) {
-    return Array2D<bool>(8, 8)
-      ..fill((x, y) =>
-          grid.get(x, y) == null &&
-          findFlippablePieces(piece, x, y).isNotEmpty);
+    return Array2D<bool>(grid.row, grid.col)
+      ..fill((x, y) => isMoveValid(piece, x, y));
   }
 
-  List<Point<int>> findFlippablePieces(Piece piece, int x, int y) {
+  bool isMoveValid(Piece playerPiece, int x, int y) {
+    if (grid.get(x, y) != null) return false;
+    for (var offset in allDirections) {
+      for (int i = 1;; i++) {
+        if (!grid.isInBounds(x + offset.x * i, y + offset.y * i)) {
+          break;
+        }
+        var piece = grid.get(x + offset.x * i, y + offset.y * i);
+        if (piece == null) {
+          break;
+        } else if (piece != playerPiece) {
+          continue; // Skip to the next direction
+        } else if (piece == playerPiece && i > 1) {
+          return true;
+        } else {
+          break;
+        }
+      }
+    }
+    return false;
+  }
+
+  List<Point<int>> findFlippablePieces(Piece playerPiece, int x, int y) {
     return [
-      ..._flip(piece, x, y, dx: 0, dy: 1) ?? [],
-      ..._flip(piece, x, y, dx: 1, dy: 1) ?? [],
-      ..._flip(piece, x, y, dx: 1, dy: 0) ?? [],
-      ..._flip(piece, x, y, dx: 1, dy: -1) ?? [],
-      ..._flip(piece, x, y, dx: 0, dy: -1) ?? [],
-      ..._flip(piece, x, y, dx: -1, dy: -1) ?? [],
-      ..._flip(piece, x, y, dx: -1, dy: 0) ?? [],
-      ..._flip(piece, x, y, dx: -1, dy: 1) ?? [],
+      ..._flip(playerPiece, x, y, dx: 0, dy: 1) ?? [],
+      ..._flip(playerPiece, x, y, dx: 1, dy: 1) ?? [],
+      ..._flip(playerPiece, x, y, dx: 1, dy: 0) ?? [],
+      ..._flip(playerPiece, x, y, dx: 1, dy: -1) ?? [],
+      ..._flip(playerPiece, x, y, dx: 0, dy: -1) ?? [],
+      ..._flip(playerPiece, x, y, dx: -1, dy: -1) ?? [],
+      ..._flip(playerPiece, x, y, dx: -1, dy: 0) ?? [],
+      ..._flip(playerPiece, x, y, dx: -1, dy: 1) ?? [],
     ];
   }
 

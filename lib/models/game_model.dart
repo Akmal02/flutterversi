@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutteversi/utils/array2d.dart';
 
-import '../utils/array2d.dart';
 import 'board.dart';
 import 'game_ai.dart';
 import 'player.dart';
@@ -12,12 +12,13 @@ class GameModel extends ChangeNotifier {
 
   Array2D<bool> marker;
 
-  Point<int> lastPoint = Point(0, 0);
+  // Bottom right of the board, just outside the corner
+  Point<int> lastPoint = Point(9, 9);
 
-  final computer = GameAI();
-  final player = Player();
+  Participant player = Player(Piece.black);
+  Participant computer = GameAI(Piece.white);
 
-  var currentTurn = Piece.black;
+  Piece currentTurn = Piece.black;
 
   GameModel() {
     reset();
@@ -25,9 +26,8 @@ class GameModel extends ChangeNotifier {
 
   Future<void> start() async {
     while (true) {
+      bool eitherOneMoved = false;
       while (true) {
-        player.prepare();
-
         print('Waiting for player move...');
         final playerMove = await player.move(board);
 
@@ -38,11 +38,14 @@ class GameModel extends ChangeNotifier {
         if (!moved) continue;
 
         marker = board.possibleMovesFor(Piece.white);
+
         if (marker.countWhere((item) => item == true) == 0) {
           marker = board.possibleMovesFor(Piece.black);
           notifyListeners();
           continue;
         } else {
+          eitherOneMoved = true;
+
           currentTurn = Piece.white;
           notifyListeners();
           break;
@@ -52,6 +55,10 @@ class GameModel extends ChangeNotifier {
       while (true) {
         print('Waiting for computer move...');
         final computerMove = await computer.move(board);
+
+        if (computerMove == null) {
+          break;
+        }
 
         print('Computer moves (${computerMove.x}, ${computerMove.y})');
         bool moved = _move(Piece.white, computerMove.x, computerMove.y);
@@ -64,10 +71,17 @@ class GameModel extends ChangeNotifier {
           notifyListeners();
           continue;
         } else {
+          eitherOneMoved = true;
+
           currentTurn = Piece.black;
           notifyListeners();
           break;
         }
+      }
+
+      if (!eitherOneMoved) {
+        print('Finished!');
+        break;
       }
     }
   }
@@ -84,7 +98,7 @@ class GameModel extends ChangeNotifier {
   }
 
   void reset() {
-    board = Board.fresh();
+    board = Board.fresh(size: 8);
     currentTurn = Piece.black;
     marker = board.possibleMovesFor(Piece.black);
     notifyListeners();

@@ -44,8 +44,7 @@ class _FlippingTransitionState extends State<FlippingTransition>
   @override
   void didUpdateWidget(FlippingTransition oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.child != oldWidget.child &&
-        widget.child?.key != oldWidget.child?.key) {
+    if (widget.child?.key != oldWidget.child?.key) {
       _startAnimation();
     }
   }
@@ -75,17 +74,21 @@ class _FlippingTransitionState extends State<FlippingTransition>
     if (widget.child == currentChild) {
       return currentChild ?? SizedBox();
     }
-    // Animate entrance if only new widget exists
 
+    // Animate entrance if only new widget exists
     if (widget.child != null && currentChild == null) {
       return FadeTransition(
         opacity: _animation,
         child: ScaleTransition(
-          scale: Tween(begin: 1.5, end: 1.0).animate(_animation),
+          scale: Tween(begin: 2.0, end: 1.0).animate(_animation),
           child: widget.child ?? SizedBox(),
         ),
       );
     }
+    if (widget.child?.key == currentChild?.key) {
+      return currentChild ?? SizedBox();
+    }
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {

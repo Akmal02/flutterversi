@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutteversi/models/game_ai.dart';
 import 'package:flutteversi/models/game_model.dart';
+import 'package:flutteversi/models/player.dart';
 import 'package:provider/provider.dart';
 
 import '../widgets/background.dart';
@@ -26,6 +28,8 @@ class _GameScreenState extends State<GameScreen> {
     [Colors.blue.shade900, Colors.lime.shade700, Colors.yellow],
     [Colors.teal.shade200, Colors.orange.shade400, Colors.pink],
     [Colors.grey.shade700, Colors.deepOrange],
+    [Colors.grey.shade700, Colors.yellow.shade400],
+    [Colors.red.shade700, Colors.brown.shade700],
   ];
 
   List<Color> _selectedGradientColors = colorSets.first;
@@ -57,19 +61,41 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildControls(BuildContext context) {
     return Builder(
-      builder: (context) => IconButton(
-        tooltip: 'Restart',
-        icon: Icon(Icons.refresh),
-        onPressed: () {
-          final model = context.read<GameModel>();
-          model.reset();
-          model.start();
-          HapticFeedback.mediumImpact();
-          setState(() {
-            _selectedGradientColors =
-                colorSets[Random().nextInt(colorSets.length)];
-          });
-        },
+      builder: (context) => Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          IconButton(
+            tooltip: 'Computer VS',
+            icon: Icon(Icons.computer),
+            onPressed: () {
+              final model = context.read<GameModel>();
+              model.reset();
+              model.player = GameAI(Piece.black);
+              model.start();
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _selectedGradientColors =
+                    colorSets[Random().nextInt(colorSets.length)];
+              });
+            },
+          ),
+          IconButton(
+            tooltip: 'Restart',
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              final model = context.read<GameModel>();
+              model.reset();
+              model.player = Player(Piece.black);
+
+              model.start();
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _selectedGradientColors =
+                    colorSets[Random().nextInt(colorSets.length)];
+              });
+            },
+          ),
+        ],
       ),
     );
   }
