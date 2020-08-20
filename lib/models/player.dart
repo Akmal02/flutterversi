@@ -9,13 +9,15 @@ abstract class Participant {
 
   Participant(this.piece);
 
+  String get name;
+
   Future<Point<int>> move(Board board);
 }
 
-class Player extends Participant {
+class HumanPlayer extends Participant {
   Completer<Point<int>> completer;
 
-  Player(Piece piece) : super(piece);
+  HumanPlayer(Piece piece) : super(piece);
 
   @override
   Future<Point<int>> move(Board board) {
@@ -26,4 +28,7 @@ class Player extends Participant {
   void send(int x, int y) {
     if (!completer.isCompleted) completer.complete(Point(x, y));
   }
+
+  @override
+  String get name => 'Human player';
 }

@@ -25,6 +25,8 @@ class _AnimatedCountState extends AnimatedWidgetBaseState<TickingNumber> {
   Widget build(BuildContext context) {
     return Text(
       _number.evaluate(animation).toString(),
+      overflow: TextOverflow.fade,
+      softWrap: false,
       style: widget.style,
     );
   }

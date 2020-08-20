@@ -1,10 +1,12 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutteversi/constants.dart';
 import 'package:flutteversi/utils/array2d.dart';
 
 import 'board.dart';
-import 'game_ai.dart';
+import 'ai_player.dart';
 import 'player.dart';
 
 class GameModel extends ChangeNotifier {
@@ -15,8 +17,10 @@ class GameModel extends ChangeNotifier {
   // Bottom right of the board, just outside the corner
   Point<int> lastPoint = Point(9, 9);
 
-  Participant player = Player(Piece.black);
-  Participant computer = GameAI(Piece.white);
+  Participant firstPlayer = HumanPlayer(Piece.black);
+  Participant secondPlayer = AIPlayer(Piece.white);
+
+  bool ongoing = false;
 
   Piece currentTurn = Piece.black;
 
@@ -27,66 +31,52 @@ class GameModel extends ChangeNotifier {
   Future<void> start() async {
     while (true) {
       bool eitherOneMoved = false;
-      while (true) {
-        print('Waiting for player move...');
-        final playerMove = await player.move(board);
+      for (var player in [firstPlayer, secondPlayer]) {
+        while (true) {
+          print('Waiting for ${player.name} (${player.piece}) move...');
 
-        print('Player moves (${playerMove.x}, ${playerMove.y})');
-
-        final moved = _move(Piece.black, playerMove.x, playerMove.y);
-
-        if (!moved) continue;
-
-        marker = board.possibleMovesFor(Piece.white);
-
-        if (marker.countWhere((item) => item == true) == 0) {
-          marker = board.possibleMovesFor(Piece.black);
-          notifyListeners();
-          continue;
-        } else {
+          if (!board.canMove(player.piece)) {
+            break;
+          }
           eitherOneMoved = true;
 
-          currentTurn = Piece.white;
-          notifyListeners();
-          break;
-        }
-      }
+          final playerMove = await player.move(board);
 
-      while (true) {
-        print('Waiting for computer move...');
-        final computerMove = await computer.move(board);
+          if (playerMove == null) break;
 
-        if (computerMove == null) {
-          break;
-        }
+          print('Player moves (${playerMove.x}, ${playerMove.y})');
 
-        print('Computer moves (${computerMove.x}, ${computerMove.y})');
-        bool moved = _move(Piece.white, computerMove.x, computerMove.y);
+          final moved = _conductMove(player.piece, playerMove.x, playerMove.y);
 
-        if (!moved) continue;
+          if (!moved) continue;
 
-        marker = board.possibleMovesFor(Piece.black);
-        if (marker.countWhere((item) => item == true) == 0) {
-          marker = board.possibleMovesFor(Piece.white);
-          notifyListeners();
-          continue;
-        } else {
-          eitherOneMoved = true;
+          marker = board.possibleMoveArrayFor(player.piece.opposite);
 
-          currentTurn = Piece.black;
-          notifyListeners();
-          break;
+          if (marker.countWhere((item) => item == true) == 0) {
+            marker = board.possibleMoveArrayFor(player.piece);
+            notifyListeners();
+            await Future.delayed(mediumAnimDuration);
+            continue;
+          } else {
+            currentTurn = player.piece.opposite;
+            notifyListeners();
+            await Future.delayed(mediumAnimDuration);
+            break;
+          }
         }
       }
 
       if (!eitherOneMoved) {
         print('Finished!');
+        HapticFeedback.mediumImpact();
+        ongoing = false;
+        notifyListeners();
         break;
       }
     }
   }
 
-  bool _move(Piece piece, int x, int y) {
+  bool _conductMove(Piece piece, int x, int y) {
     final newBoard = board.makeMove(piece, x, y);
     if (newBoard != null) {
       board = newBoard;
@@ -100,9 +90,17 @@ class GameModel extends ChangeNotifier {
   void reset() {
     board = Board.fresh(size: 8);
     currentTurn = Piece.black;
-    marker = board.possibleMovesFor(Piece.black);
+    marker = board.possibleMoveArrayFor(Piece.black);
+    ongoing = true;
     notifyListeners();
   }
 }
 
 enum Piece { black, white }
+
+// Well it would be great is enum can implement functions as well...
+extension PieceExt on Piece {
+  get opposite => this == Piece.black ? Piece.white : Piece.black;
+
+  get name => this == Piece.black ? 'Black' : 'White';
+}

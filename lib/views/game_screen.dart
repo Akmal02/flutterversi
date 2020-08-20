@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutteversi/models/game_ai.dart';
+import 'package:flutteversi/models/random_player.dart';
 import 'package:flutteversi/models/game_model.dart';
 import 'package:flutteversi/models/player.dart';
 import 'package:provider/provider.dart';
@@ -70,7 +70,7 @@ class _GameScreenState extends State<GameScreen> {
             onPressed: () {
               final model = context.read<GameModel>();
               model.reset();
-              model.player = GameAI(Piece.black);
+              model.firstPlayer = RandomPlayer(Piece.black);
               model.start();
               HapticFeedback.mediumImpact();
               setState(() {
@@ -85,7 +85,7 @@ class _GameScreenState extends State<GameScreen> {
             onPressed: () {
               final model = context.read<GameModel>();
               model.reset();
-              model.player = Player(Piece.black);
+              model.firstPlayer = HumanPlayer(Piece.black);
 
               model.start();
               HapticFeedback.mediumImpact();

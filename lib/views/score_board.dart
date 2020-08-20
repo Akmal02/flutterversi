@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutteversi/constants.dart';
 import 'package:flutteversi/models/game_model.dart';
 import 'package:flutteversi/widgets/ticking_number.dart';
 import 'package:provider/provider.dart';
@@ -7,10 +8,6 @@ class ScoreBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = context.watch<GameModel>();
-
-    final blackPieces = _countPieces(model, Piece.black);
-    final whitePieces = _countPieces(model, Piece.white);
-    final totalScore = blackPieces + whitePieces;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
@@ -22,24 +19,8 @@ class ScoreBoard extends StatelessWidget {
               builder: (context, constraints) {
                 return Row(
                   children: [
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.fastOutSlowIn,
-                      color: Colors.black12,
-                      width: constraints.maxWidth * blackPieces / totalScore,
-                      height: double.infinity,
-                      child: _buildScore(context, 'Black', blackPieces,
-                          showIndicator: false),
-                    ),
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 500),
-                      curve: Curves.fastOutSlowIn,
-                      color: Colors.white12,
-                      width: constraints.maxWidth * whitePieces / totalScore,
-                      height: double.infinity,
-                      child: _buildScore(context, 'White', whitePieces,
-                          showIndicator: model.currentTurn == Piece.white),
-                    ),
+                    _buildSegment(context, constraints, model, Piece.black),
+                    _buildSegment(context, constraints, model, Piece.white),
                   ],
                 );
               },
@@ -47,6 +28,57 @@ class ScoreBoard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSegment(BuildContext context, BoxConstraints constraints,
+      GameModel model, Piece piece) {
+    final playerPiece = model.board.scoreFor(piece);
+    final totalPiece = model.board.totalScore;
+
+    final isGameOver = !model.ongoing;
+    Piece winningSide;
+
+    if (isGameOver) {
+      if (model.board.scoreDifference > 0) {
+        winningSide = Piece.black;
+      } else if (model.board.scoreDifference < 0) {
+        winningSide = Piece.white;
+      }
+    }
+
+    double width;
+    if (isGameOver) {
+      width = winningSide == piece ? constraints.maxWidth : 0;
+    } else {
+      width = constraints.maxWidth * playerPiece / totalPiece;
+    }
+
+    String promptText;
+    if (isGameOver) {
+      promptText = winningSide == piece ? '${winningSide.name} wins' : '';
+    }
+    return AnimatedContainer(
+      duration: mediumAnimDuration,
+      curve: Curves.fastOutSlowIn,
+      color: piece == Piece.black ? Colors.black12 : Colors.white12,
+      width: width,
+      height: double.infinity,
+      child: AnimatedSwitcher(
+          duration: mediumAnimDuration,
+          child: isGameOver
+              ? _buildFinishingPrompt(context, promptText)
+              : _buildScore(context, piece.name, playerPiece,
+                  showIndicator: model.ongoing && model.currentTurn == piece)),
+    );
+  }
+
+  Widget _buildFinishingPrompt(BuildContext context, String text) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Text(text,
+          style: textTheme.headline6.copyWith(fontWeight: FontWeight.w400)),
     );
   }
 
@@ -84,15 +116,11 @@ class ScoreBoard extends StatelessWidget {
           ),
           SizedBox(height: 4),
           TickingNumber(count,
-              duration: Duration(milliseconds: 500),
+              duration: mediumAnimDuration,
               style: textTheme.headline4.copyWith(
                   fontWeight: FontWeight.w300, color: Colors.white70)),
         ],
       ),
     );
-  }
-
-  int _countPieces(GameModel model, Piece piece) {
-    return model.board.scoreFor(piece);
   }
 }

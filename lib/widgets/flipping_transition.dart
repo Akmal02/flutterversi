@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutteversi/constants.dart';
 
 class FlippingTransition extends StatefulWidget {
   final Widget child;
@@ -28,7 +29,7 @@ class _FlippingTransitionState extends State<FlippingTransition>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 500),
+      duration: mediumAnimDuration,
     );
     _animation =
         CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
@@ -88,7 +89,6 @@ class _FlippingTransitionState extends State<FlippingTransition>
     if (widget.child?.key == currentChild?.key) {
       return currentChild ?? SizedBox();
     }
-
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {

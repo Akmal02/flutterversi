@@ -52,11 +52,28 @@ class Board {
 
   int scoreFor(Piece piece) => grid.countWhere((item) => item == piece);
 
+  int get totalScore => grid.countWhere((item) => item != null);
+
   int get scoreDifference => scoreFor(Piece.black) - scoreFor(Piece.white);
 
-  Array2D<bool> possibleMovesFor(Piece piece) {
+  bool get isGameOver => totalScore == grid.row * grid.col;
+//      || (!canMove(Piece.black) && !canMove(Piece.white));
+
+  Array2D<bool> possibleMoveArrayFor(Piece piece) {
     return Array2D<bool>(grid.row, grid.col)
       ..fill((x, y) => isMoveValid(piece, x, y));
+  }
+
+  List<Point<int>> findValidMovesFor(Piece piece) {
+    return [
+      for (int i = 0; i < grid.row; i++)
+        for (int j = 0; j < grid.col; j++)
+          if (isMoveValid(piece, j, i)) Point(j, i),
+    ];
+  }
+
+  bool canMove(Piece piece) {
+    return findValidMovesFor(piece).isNotEmpty;
   }
 
   bool isMoveValid(Piece playerPiece, int x, int y) {
@@ -82,36 +99,61 @@ class Board {
   }
 
   List<Point<int>> findFlippablePieces(Piece playerPiece, int x, int y) {
-    return [
-      ..._flip(playerPiece, x, y, dx: 0, dy: 1) ?? [],
-      ..._flip(playerPiece, x, y, dx: 1, dy: 1) ?? [],
-      ..._flip(playerPiece, x, y, dx: 1, dy: 0) ?? [],
-      ..._flip(playerPiece, x, y, dx: 1, dy: -1) ?? [],
-      ..._flip(playerPiece, x, y, dx: 0, dy: -1) ?? [],
-      ..._flip(playerPiece, x, y, dx: -1, dy: -1) ?? [],
-      ..._flip(playerPiece, x, y, dx: -1, dy: 0) ?? [],
-      ..._flip(playerPiece, x, y, dx: -1, dy: 1) ?? [],
-    ];
-  }
+//    return [
+//      ..._flip(playerPiece, x, y, dx: 0, dy: 1) ?? [],
+//      ..._flip(playerPiece, x, y, dx: 1, dy: 1) ?? [],
+//      ..._flip(playerPiece, x, y, dx: 1, dy: 0) ?? [],
+//      ..._flip(playerPiece, x, y, dx: 1, dy: -1) ?? [],
+//      ..._flip(playerPiece, x, y, dx: 0, dy: -1) ?? [],
+//      ..._flip(playerPiece, x, y, dx: -1, dy: -1) ?? [],
+//      ..._flip(playerPiece, x, y, dx: -1, dy: 0) ?? [],
+//      ..._flip(playerPiece, x, y, dx: -1, dy: 1) ?? [],
+//    ];
 
-  List<Point<int>> _flip(Piece piece, int x, int y, {int dx, int dy}) {
-    assert(!(dx == 0 && dy == 0));
-    x += dx;
-    y += dy;
-    if (!grid.isInBounds(x, y) || grid.get(x, y) == null) {
-      return null;
-    } else if (grid.get(x, y) == piece) {
-      return [];
+    if (grid.get(x, y) != null) return List.empty();
+
+    final pieceList = <Point<int>>[];
+
+    for (var offset in allDirections) {
+      for (int i = 1;; i++) {
+        if (!grid.isInBounds(x + offset.x * i, y + offset.y * i)) {
+          break;
+        }
+        var piece = grid.get(x + offset.x * i, y + offset.y * i);
+        if (piece == null) {
+          break;
+        } else if (piece != playerPiece) {
+          continue; // Skip to the next direction
+        } else if (piece == playerPiece && i > 1) {
+          // Include all the opponent pieces in between
+          for (int j = 1; j < i; j++) {
+            pieceList.add(Point(x + offset.x * j, y + offset.y * j));
+          }
+        }
+        break;
+      }
     }
-    final points = [
-      Point(x, y),
-    ];
-    final iterated = _flip(piece, x, y, dx: dx, dy: dy);
-    if (iterated != null) {
-      points.addAll(iterated);
-      return points;
-    } else {
-      return null;
-    }
+    return pieceList;
   }
+//
+//  List<Point<int>> _flip(Piece piece, int x, int y, {int dx, int dy}) {
+//    assert(!(dx == 0 && dy == 0));
+//    x += dx;
+//    y += dy;
+//    if (!grid.isInBounds(x, y) || grid.get(x, y) == null) {
+//      return null;
+//    } else if (grid.get(x, y) == piece) {
+//      return [];
+//    }
+//    final points = [
+//      Point(x, y),
+//    ];
+//    final iterated = _flip(piece, x, y, dx: dx, dy: dy);
+//    if (iterated != null) {
+//      points.addAll(iterated);
+//      return points;
+//    } else {
+//      return null;
+//    }
+//  }
 }

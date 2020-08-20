@@ -57,7 +57,8 @@ class _BoardViewState extends State<BoardView> {
       splashColor: Colors.transparent,
       customBorder: CircleBorder(),
       onTap: () {
-        if (model.player is Player) (model.player as Player).send(x, y);
+        if (model.firstPlayer is HumanPlayer)
+          (model.firstPlayer as HumanPlayer).send(x, y);
       },
       child: SizedBox.expand(
         child: Stack(
