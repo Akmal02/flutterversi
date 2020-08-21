@@ -2,11 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutteversi/constants.dart';
 import 'package:flutteversi/utils/array2d.dart';
 
-import 'board.dart';
 import 'ai_player.dart';
+import 'board.dart';
 import 'player.dart';
 
 class GameModel extends ChangeNotifier {
@@ -32,17 +31,23 @@ class GameModel extends ChangeNotifier {
     while (true) {
       bool eitherOneMoved = false;
       for (var player in [firstPlayer, secondPlayer]) {
+        currentTurn = player.piece;
         while (true) {
           print('Waiting for ${player.name} (${player.piece}) move...');
 
-          if (!board.canMove(player.piece)) {
-            break;
-          }
-          eitherOneMoved = true;
+          final validMoves = board.findValidMovesFor(player.piece);
 
-          final playerMove = await player.move(board);
+          if (validMoves.isEmpty) break;
+
+          eitherOneMoved = true;
+          marker = board.possibleMoveArrayFor(player.piece);
+          notifyListeners();
+          await Future.delayed(Duration(milliseconds: 250));
+
+          final playerMove = await player.move(board, validMoves);
 
           if (playerMove == null) break;
+          if (!validMoves.contains(playerMove)) continue;
 
           print('Player moves (${playerMove.x}, ${playerMove.y})');
 
@@ -50,19 +55,19 @@ class GameModel extends ChangeNotifier {
 
           if (!moved) continue;
 
-          marker = board.possibleMoveArrayFor(player.piece.opposite);
+          break;
 
-          if (marker.countWhere((item) => item == true) == 0) {
-            marker = board.possibleMoveArrayFor(player.piece);
-            notifyListeners();
-            await Future.delayed(mediumAnimDuration);
-            continue;
-          } else {
-            currentTurn = player.piece.opposite;
-            notifyListeners();
-            await Future.delayed(mediumAnimDuration);
-            break;
-          }
+//          if (marker.countWhere((item) => item == true) == 0) {
+//            marker = board.possibleMoveArrayFor(player.piece);
+//            notifyListeners();
+//            await Future.delayed(mediumAnimDuration);
+//            continue;
+//          } else {
+//            currentTurn = player.piece.opposite;
+//            notifyListeners();
+//            await Future.delayed(mediumAnimDuration);
+//            break;
+//          }
         }
       }
 

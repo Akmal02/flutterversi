@@ -11,7 +11,7 @@ abstract class Participant {
 
   String get name;
 
-  Future<Point<int>> move(Board board);
+  Future<Point<int>> move(Board board, List<Point<int>> possibleMoves);
 }
 
 class HumanPlayer extends Participant {
@@ -20,7 +20,7 @@ class HumanPlayer extends Participant {
   HumanPlayer(Piece piece) : super(piece);
 
   @override
-  Future<Point<int>> move(Board board) {
+  Future<Point<int>> move(Board board, List<Point<int>> possibleMoves) {
     completer = Completer<Point<int>>();
     return completer.future;
   }

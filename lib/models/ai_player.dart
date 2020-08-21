@@ -1,22 +1,25 @@
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutteversi/constants.dart';
 import 'package:flutteversi/models/board.dart';
 import 'package:flutteversi/models/game_model.dart';
 import 'package:flutteversi/models/player.dart';
 
-// http://www.hamedahmadi.com/gametree/
+/*
+ * Interesting read:
+ * http://www.hamedahmadi.com/gametree/
+ * http://www.cs.cornell.edu/~yuli/othello/othello.html
+ */
 
 class AIPlayer extends Participant {
   AIPlayer(Piece piece) : super(piece);
 
   @override
-  Future<Point<int>> move(Board board) async {
+  Future<Point<int>> move(Board board, List<Point<int>> possibleMoves) async {
     await Future.delayed(mediumAnimDuration);
-    return await compute(
-        _runAIEngine, NegamaxEngine(board: board, piece: piece));
+    return await compute(_runAIEngine,
+        NegamaxEngine(board: board, piece: piece, moves: possibleMoves));
   }
 
   @override
@@ -30,6 +33,7 @@ Point<int> _runAIEngine(NegamaxEngine engine) {
 class NegamaxEngine {
   final Board board;
   final Piece piece;
+  final List<Point<int>> moves;
   int _nodesExplored = 0;
   int _nodesPruned = 0;
 
@@ -39,14 +43,12 @@ class NegamaxEngine {
 
   int maxDepth = 3;
 
-  NegamaxEngine({this.board, this.piece});
+  NegamaxEngine({this.board, this.piece, this.moves});
 
   Point<int> run() {
-    final possibleMoves = board.findValidMovesFor(piece);
-
     Point<int> bestMove;
     int bestScore = -infinity;
-    for (var move in possibleMoves) {
+    for (var move in moves) {
       var newBoard = board.makeMove(piece, move.x, move.y);
       var score = _negamax(newBoard, 1, piece, -infinity, infinity);
       print('Score for ${_pointToCoord(move)} is $score');
@@ -55,8 +57,9 @@ class NegamaxEngine {
         bestMove = move;
       }
     }
-    print("Fount best move ${_pointToCoord(bestMove)} with score $bestScore "
-        "after exploring $_nodesExplored nodes (pruned: $_nodesPruned)");
+    if (bestMove != null)
+      print("Fount best move ${_pointToCoord(bestMove)} with score $bestScore "
+          "after exploring $_nodesExplored nodes (pruned: $_nodesPruned)");
     return bestMove;
   }
 
@@ -70,9 +73,9 @@ class NegamaxEngine {
     for (var move in board.findValidMovesFor(p)) {
       var newBoard = board.makeMove(p, move.x, move.y);
       int x = -_negamax(newBoard, depth + 1, p.opposite, -beta, -alpha);
-      if (depth <= 1) {
-        print('D: $depth, move: ${_pointToCoord(move)}, score: $x');
-      }
+//      if (depth <= 1) {
+//        print('D: $depth, move: ${_pointToCoord(move)}, score: $x');
+//      }
       if (x > max) max = x;
       if (x > alpha) alpha = x;
       if (alpha >= beta) {
@@ -86,61 +89,66 @@ class NegamaxEngine {
 
 class Evaluator {
   int eval(Board board, Piece p) {
-    final pieceDiff = _evalPieceDifference(board, p);
-//    final corners = _evalCorners(board, p);
-//    final edges = _evalEdges(board, p);
-    final positions = _evalPositions(board, p);
-    final mobility = _evalMobility(board, p);
-    return 2 * pieceDiff + 3 * mobility + positions;
+    final pieceDiff = evalPieceDifference(board, p);
+    final corners = evalCorners(board, p);
+//    final positions = _evalPositions(board, p);
+    final mobility = evalMobility(board, p);
+    final frontiers = evalFrontiers(board, p);
+    return pieceDiff + 10 * mobility + 2 * frontiers + 300 * corners;
   }
 
-  int _evalPieceDifference(Board board, Piece p) {
-//    final value = 100 * board.scoreDifference / (board.totalScore + 1);
-//    return value.toInt();
-    return board.scoreDifference;
+  // Normalize to range [-100, 100]
+  int _normalize(int a, int b) {
+    return 100 * (a - b) ~/ (a + b + 1);
   }
 
-  int _evalMobility(Board board, Piece p) {
+  int evalPieceDifference(Board board, Piece p) {
+//    return _normalize(board.scoreFor(p), board.scoreFor(p.opposite));
+    final playerScore = board.scoreFor(p);
+    final opponentScore = board.scoreFor(p.opposite);
+    return playerScore - opponentScore;
+  }
+
+  int evalMobility(Board board, Piece p) {
     final playerTotalMoves = board.findValidMovesFor(p).length;
     final opponentTotalMoves = board.findValidMovesFor(p.opposite).length;
-//    return 100 *
-//        (playerTotalMoves - opponentTotalMoves) ~/
-//        (playerTotalMoves + opponentTotalMoves + 1);
+//    return _normalize(playerTotalMoves, opponentTotalMoves);
     return playerTotalMoves - opponentTotalMoves;
   }
 
   static const weight = [
-    [1000, -200, 11, 6, 6, 11, -200, 1000],
-    [-200, -100, 1, 2, 2, 1, -100, -200],
+    [100, -20, 11, 6, 6, 11, -20, 100],
+    [-20, -10, 1, 2, 2, 1, -10, -20],
     [11, 1, 5, 4, 4, 5, 1, 11],
     [6, 2, 4, 2, 2, 4, 2, 6],
     [6, 2, 4, 2, 2, 4, 2, 6],
     [11, 1, 5, 4, 4, 5, 1, 11],
-    [-200, -100, 1, 2, 2, 1, -100, -200],
-    [1000, -200, 11, 6, 6, 11, -200, 1000],
+    [-20, -10, 1, 2, 2, 1, -10, -20],
+    [100, -20, 11, 6, 6, 11, -20, 100],
   ];
 
-  int _evalPositions(Board board, Piece p) {
-    int score = 0;
+  int evalPositions(Board board, Piece p) {
+    int playerScore = 0;
+    int opponentScore = 0;
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         var x = board.grid(j, i);
-        if (x == p) score += weight[j][i];
+        if (x == p) playerScore += weight[j][i];
+        if (x == p.opposite) opponentScore += weight[j][i];
       }
     }
-    return score;
+    return playerScore;
   }
 
-  int _evalCorners(Board board, Piece p) {
-    final playerCorners = _countCorners(board, p);
-    final opponentCorners = _countCorners(board, p.opposite);
+  int evalCorners(Board board, Piece p) {
+    final playerCorners = countCorners(board, p);
+    final opponentCorners = countCorners(board, p.opposite);
 
-    return 100 *
-        (playerCorners - opponentCorners) ~/
-        (playerCorners + opponentCorners + 1);
+//    return _normalize(playerCorners, opponentCorners);
+    return playerCorners - opponentCorners;
   }
 
-  int _countCorners(Board board, Piece p) {
+  int countCorners(Board board, Piece p) {
     int ownedCorners = 0;
     if (board.grid(0, 0) == p) ownedCorners++;
     if (board.grid(0, board.grid.col - 1) == p) ownedCorners++;
@@ -149,27 +157,32 @@ class Evaluator {
     return ownedCorners;
   }
 
-  int _evalEdges(Board board, Piece p) {
-    final playerEdges = _countEdges(board, p);
-    final opponentEdges = _countEdges(board, p.opposite);
+  int evalFrontiers(Board board, Piece p) {
+    final playerFrontiers = countFrontiers(board, p);
+    final opponentFrontiers = countFrontiers(board, p.opposite);
 
-    return 100 *
-        (playerEdges - opponentEdges) ~/
-        (playerEdges + opponentEdges + 1);
+//    return _normalize(opponentFrontiers, playerFrontiers);
+    return opponentFrontiers - playerFrontiers;
   }
 
-  int _countEdges(Board board, Piece p) {
-    int ownedEdges = 0;
+  int countFrontiers(Board board, Piece p) {
+    int frontiers = 0;
 
-    for (int i = 1; i < board.grid.row - 1; i++) {
-      if (board.grid(i, 0) == p) ownedEdges++;
-      if (board.grid(i, board.grid.col - 1) == p) ownedEdges++;
+    for (int i = 0; i < board.grid.row; i++) {
+      for (int j = 0; j < board.grid.col; j++) {
+        if (board.grid(j, i) == p) {
+          for (var dir in Board.allDirections) {
+            if (!board.grid.isInBounds(j + dir.x, i + dir.y)) {
+              continue;
+            } else if (board.grid(j + dir.x, i + dir.y) == null) {
+              frontiers++;
+              break;
+            }
+          }
+        }
+      }
     }
-    for (int j = 1; j < board.grid.col - 1; j++) {
-      if (board.grid(0, j) == p) ownedEdges++;
-      if (board.grid(board.grid.row - 1, j) == p) ownedEdges++;
-    }
-    return ownedEdges;
+    return frontiers;
   }
 }
 
