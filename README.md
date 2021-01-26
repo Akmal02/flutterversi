@@ -1,6 +1,7 @@
 # flutteversi
 
 Reversi game made with Flutter
+(README will be updated later)
 
 ## Getting Started
 
