@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutteversi/models/ai_player.dart';
 import 'package:flutteversi/models/random_player.dart';
 import 'package:flutteversi/models/game_model.dart';
 import 'package:flutteversi/models/player.dart';
@@ -49,12 +50,12 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   ScoreBoard(),
                   BoardView(),
+                  _buildControls(context),
                 ],
               ),
             ),
           ),
         ),
-        floatingActionButton: _buildControls(context),
       ),
     );
   }
@@ -62,11 +63,26 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildControls(BuildContext context) {
     return Builder(
       builder: (context) => Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           IconButton(
-            tooltip: 'Computer VS',
+            tooltip: 'VS AI',
             icon: Icon(Icons.computer),
+            onPressed: () {
+              final model = context.read<GameModel>();
+              model.reset();
+              model.firstPlayer = AIPlayer(Piece.black, level: 4);
+              model.start();
+              HapticFeedback.mediumImpact();
+              setState(() {
+                _selectedGradientColors =
+                    colorSets[Random().nextInt(colorSets.length)];
+              });
+            },
+          ),
+          IconButton(
+            tooltip: 'VS Random',
+            icon: Icon(Icons.casino),
             onPressed: () {
               final model = context.read<GameModel>();
               model.reset();

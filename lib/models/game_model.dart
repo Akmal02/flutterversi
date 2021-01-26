@@ -2,7 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutteversi/models/history_record.dart';
 import 'package:flutteversi/utils/array2d.dart';
+
+import 'package:flutteversi/utils/point_to_coord.dart';
 
 import 'ai_player.dart';
 import 'board.dart';
@@ -17,7 +20,9 @@ class GameModel extends ChangeNotifier {
   Point<int> lastPoint = Point(9, 9);
 
   Participant firstPlayer = HumanPlayer(Piece.black);
-  Participant secondPlayer = AIPlayer(Piece.white);
+  Participant secondPlayer = AIPlayer(Piece.white, level: 3);
+
+  List<HistoryRecord> history;
 
   bool ongoing = false;
 
@@ -25,6 +30,15 @@ class GameModel extends ChangeNotifier {
 
   GameModel() {
     reset();
+  }
+
+  void reset() {
+    board = Board.fresh(size: 8);
+    currentTurn = Piece.black;
+    marker = board.possibleMoveArrayFor(Piece.black);
+    history = [];
+    ongoing = true;
+    notifyListeners();
   }
 
   Future<void> start() async {
@@ -49,25 +63,15 @@ class GameModel extends ChangeNotifier {
           if (playerMove == null) break;
           if (!validMoves.contains(playerMove)) continue;
 
-          print('Player moves (${playerMove.x}, ${playerMove.y})');
+          print('${player.name} moves ${playerMove.coord}');
 
           final moved = _conductMove(player.piece, playerMove.x, playerMove.y);
 
           if (!moved) continue;
 
+          history.add(
+              HistoryRecord(board: board, turn: currentTurn, move: playerMove));
           break;
-
-//          if (marker.countWhere((item) => item == true) == 0) {
-//            marker = board.possibleMoveArrayFor(player.piece);
-//            notifyListeners();
-//            await Future.delayed(mediumAnimDuration);
-//            continue;
-//          } else {
-//            currentTurn = player.piece.opposite;
-//            notifyListeners();
-//            await Future.delayed(mediumAnimDuration);
-//            break;
-//          }
         }
       }
 
@@ -90,14 +94,6 @@ class GameModel extends ChangeNotifier {
     } else {
       return false;
     }
-  }
-
-  void reset() {
-    board = Board.fresh(size: 8);
-    currentTurn = Piece.black;
-    marker = board.possibleMoveArrayFor(Piece.black);
-    ongoing = true;
-    notifyListeners();
   }
 }
 

@@ -6,10 +6,14 @@ import 'game_model.dart';
 
 class Board {
   final Array2D<Piece> grid;
+  final int blackPieces, whitePieces;
 
-  Board.fresh({int size = 8}) : grid = _setStartingPoint(size);
+  Board.fresh({int size = 8}) : this.from(_setStartingPoint(size));
 
-  Board.from(this.grid);
+  Board.from(this.grid)
+      : assert(grid.size.x >= 4 && grid.size.x.isEven),
+        blackPieces = grid.countWhere((item) => item == Piece.black),
+        whitePieces = grid.countWhere((item) => item == Piece.white);
 
   static const allDirections = [
     Point(1, 0),
@@ -50,13 +54,22 @@ class Board {
     return Board.from(newGrid);
   }
 
-  int scoreFor(Piece piece) => grid.countWhere((item) => item == piece);
+  int scoreFor(Piece piece) {
+    if (piece == Piece.black) {
+      return blackPieces;
+    } else if (piece == Piece.white) {
+      return whitePieces;
+    } else {
+      return 0;
+    }
+  }
 
-  int get totalScore => grid.countWhere((item) => item != null);
+  int get totalScore => blackPieces + whitePieces;
 
-  int get scoreDifference => scoreFor(Piece.black) - scoreFor(Piece.white);
+  int get scoreDifference => blackPieces - whitePieces;
 
   bool get isGameOver => totalScore == grid.row * grid.col;
+
 //      || (!canMove(Piece.black) && !canMove(Piece.white));
 
   Array2D<bool> possibleMoveArrayFor(Piece piece) {
